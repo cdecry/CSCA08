@@ -1,0 +1,79 @@
+from typing import List
+
+from constants import (COL_RIDING, COL_VOTER, COL_RANK, COL_RANGE,
+                       COL_APPROVAL, APPROVAL_TRUE, APPROVAL_FALSE,
+                       SEPARATOR)
+
+def clean_data(data: List[List[str]]) -> None:
+    """Modify data so that the applicable string values are converted to
+    their appropriate type, making data of type List['VoteType'].
+
+    Pre: Each item in data is in the format
+     at index COL_RIDING: a str that can be converted to an integer (riding)
+     at index COL_VOTER: a str that can be converted to an integer (voter ID)
+     at index COL_RANK: a SEPARATOR-separated non-empty string (rank ballot)
+     at index COL_RANGE: a SEPARATOR-separated non-empty string of ints
+                         (range ballot)
+     at index COL_APPROVAL: a SEPARATOR-separated non-empty string of
+                         APPROVAL_TRUE's and APPROVAL_FALSE's (approval ballot)
+
+    >>> data = [['0', '1', 'NDP;Liberal;Green;CPC', '1;4;2;3', 'NO;YES;NO;NO']]
+    >>> expected = [[0, 1, ['NDP', 'Liberal', 'Green', 'CPC'], [1, 4, 2, 3],
+    ...             [False, True, False, False]]]
+    >>> clean_data(data)
+    >>> data == expected
+    True
+    """
+
+    expected = [[0, 1, ['NDP', 'Liberal', 'Green', 'CPC'], [1, 4, 2, 3],[False, True, False, False]]]
+    
+    data[0][COL_RIDING] = int(data[0][COL_RIDING])
+    data[0][COL_VOTER] = int(data[0][COL_VOTER])
+    
+
+    for i in range(COL_RANK, COL_APPROVAL + 1):
+        sublist = []
+        num_separator = data[0][i].count(SEPARATOR)
+        
+        for j in range(num_separator + 1):
+            separator_index = data[0][i].find(SEPARATOR)
+            if separator_index == -1:
+                sublist.append(data[0][i][0:])
+            else:
+                sublist.append(data[0][i][0:separator_index])
+                data[0][i] = data[0][i][separator_index + 1:]
+        data[0][i] = sublist
+    
+    for i in range(len(data[0][COL_RANGE])):
+        data[0][COL_RANGE][i] = int(data[0][COL_RANGE][i])
+
+    for i in range(len(data[0][COL_APPROVAL])):
+        if data[0][COL_APPROVAL][i] == APPROVAL_TRUE:
+            data[0][COL_APPROVAL][i] = True
+        else:
+            data[0][COL_APPROVAL][i] = False
+
+    print(data)
+    print(data == expected)
+
+
+    """cleaned = []
+
+    cleaned.append(data[0][0])
+    cleaned.append(data[0][1])
+    
+    for i in range(2, 5):
+        ranked = []
+        num_semicolon = data[0][i].count(';')
+        for j in range(num_semicolon + 1):
+            semicolon_index = data[0][i].find(';')
+            if semicolon_index == -1:
+                ranked.append(data[0][i][0:])
+            else:
+                ranked.append(data[0][i][0:semicolon_index])
+                data[0][i] = data[0][i][semicolon_index + 1:]
+        cleaned.append(ranked)
+
+    print(cleaned)"""
+
+clean_data([['0', '1', 'NDP;Liberal;Green;CPC', '1;4;2;3', 'NO;YES;NO;NO']])
