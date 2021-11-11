@@ -1,5 +1,6 @@
 {
     "python.analysis.extraPaths": [
-        "./Assignment1/starter/pyta"
+        "./Assignment1/starter/pyta",
+        "./Assignment2/starter"
     ]
 }

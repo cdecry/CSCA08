@@ -12,7 +12,7 @@ Elizabeth Patitsas, Anya Tafliovich.
 
 """
 
-from typing import List
+from typing import Collection, List
 
 from constants import (COL_RIDING, COL_VOTER, COL_RANK, COL_RANGE,
                        COL_APPROVAL, APPROVAL_TRUE, APPROVAL_FALSE,
@@ -56,6 +56,11 @@ SAMPLE_DATA_3 = [[28, 3, ['DEMOCRATIC', 'REPUBLICAN'], [8, 2], [True, False]],
                  [49, 35, ['REPUBLICAN', 'DEMOCRATIC'], [0, 1], [False, False]]]
 SAMPLE_ORDER_3 = ['DEMOCRATIC', 'REPUBLICAN']
 
+SAMPLE_DATA_4 = [[4, 8, ['CCP'], [0], [False]],
+                 [4, 14, ['CCP'], [1], [False]],
+                 [13, 8, ['CCP'], [0], [False]]]
+SAMPLE_ORDER_4 = ['CCP']
+
 
 ###############################################################################
 # Task 1: Data cleaning
@@ -80,36 +85,34 @@ def clean_data(data: List[List[str]]) -> None:
     >>> clean_data(data)
     >>> data == expected
     True
+    >>> data2 = [['2', '15', 'DEMOCRATIC;REPUBLICAN', '10;0', 'YES;NO']]
+    >>> expected2 = [[2, 15, ['DEMOCRATIC', 'REPUBLICAN'], [10, 0],
+    ...              [True, False]]]
+    >>> clean_data(data2)
+    >>> data2 == expected2
+    True
+    >>> data3 = []
+    >>> expected3 = []
+    >>> clean_data(data3)
+    >>> data3 == expected3
+    True
     """
 
-    data[0][COL_RIDING] = int(data[0][COL_RIDING])
-    data[0][COL_VOTER] = int(data[0][COL_VOTER])
+    for vote in data:
+        vote[COL_RIDING] = int(vote[COL_RIDING])
+        vote[COL_VOTER] = int(vote[COL_VOTER])
 
-    for i in range(COL_RANK, COL_APPROVAL + 1):
-        sublist = []
-        num_separator = data[0][i].count(SEPARATOR)
-        
-        for j in range(num_separator + 1):
-            separator_index = data[0][i].find(SEPARATOR)
-            if separator_index == -1:
-                sublist.append(data[0][i][0:])
-            else:
-                sublist.append(data[0][i][0:separator_index])
-                data[0][i] = data[0][i][separator_index + 1:]
+        vote[COL_RANK] = vote[COL_RANK].split(SEPARATOR)
+        vote[COL_RANGE] = vote[COL_RANGE].split(SEPARATOR)
+        vote[COL_APPROVAL] = vote[COL_APPROVAL].split(SEPARATOR)
 
-        data[0][i] = sublist
-    
-    for i in range(len(data[0][COL_RANGE])):
-        data[0][COL_RANGE][i] = int(data[0][COL_RANGE][i])
+        for value in vote[COL_RANGE]:
+            index = vote[COL_RANGE].index(value)
+            vote[COL_RANGE][index] = int(vote[COL_RANGE][index])
 
-    for i in range(len(data[0][COL_APPROVAL])):
-        if data[0][COL_APPROVAL][i] == APPROVAL_TRUE:
-            data[0][COL_APPROVAL][i] = True
-        else:
-            data[0][COL_APPROVAL][i] = False
-
-    return data
-
+        for approval in vote[COL_APPROVAL]:
+            index = vote[COL_APPROVAL].index(approval)
+            vote[COL_APPROVAL][index] = approval == APPROVAL_TRUE
 
 ###############################################################################
 # Task 2: Data extraction
@@ -123,6 +126,11 @@ def extract_column(data: List[list], column: int) -> list:
 
     >>> extract_column([[1, 2, 3], [4, 5, 6]], 2)
     [3, 6]
+    >>> ballots = [['LIBERAL', 'GREEN', 'CPC', 'NDP'],
+    ...            ['CPC', 'NDP', 'LIBERAL', 'GREEN'],
+    ...            ['NDP', 'CPC', 'GREEN', 'LIBERAL']]
+    >>> extract_column(ballots, 0)
+    ['LIBERAL', 'CPC', 'NDP']
     """
 
     extracted = []
@@ -143,13 +151,8 @@ def extract_single_ballots(data: List['VoteData']) -> List[str]:
     ['NDP', 'LIBERAL', 'GREEN', 'LIBERAL']
     """
 
-    highest_ranked = []
-
-    for vote in data[0]:
-        highest_ranked.append(vote[COL_RANK][0])
-
-    return highest_ranked
-
+    extracted = extract_column(data, COL_RANK)
+    return extract_column(extracted, 0)
 
 def get_votes_in_riding(data: List['VoteData'],
                         riding: int) -> List['VoteData']:
@@ -170,7 +173,7 @@ def get_votes_in_riding(data: List['VoteData'],
 
     riding_votes = []
 
-    for vote in data[0]:
+    for vote in data:
         if vote[COL_RIDING] == riding:
             riding_votes.append(vote)
 
@@ -194,7 +197,12 @@ def voting_plurality(single_ballots: List[str],
     [1, 3, 0, 1]
     """
 
-    return 42
+    total_ballots = []
+
+    for party in party_order:
+        total_ballots.append(single_ballots.count(party))
+
+    return total_ballots
 
 
 ###############################################################################
@@ -218,7 +226,16 @@ def voting_approval(approval_ballots: List[List[bool]],
     [1, 2, 0, 1]
     """
 
-    return 42
+    approvals = []
+
+    for i in range(len(party_order)):
+        num_approvals = 0
+        for ballot in approval_ballots:
+            if ballot[i]:
+                num_approvals += 1
+        approvals.append(num_approvals)
+
+    return approvals
 
 
 ###############################################################################
@@ -238,7 +255,15 @@ def voting_range(range_ballots: List[List[int]],
     [7, 12, 6, 8]
     """
 
-    return 42
+    total_scores = []
+
+    for i in range(len(party_order)):
+        score = 0
+        for ballot in range_ballots:
+            score += ballot[i]
+        total_scores.append(score)
+
+    return total_scores
 
 
 ###############################################################################
@@ -258,7 +283,15 @@ def voting_borda(rank_ballots: List[List[str]],
     [4, 4, 8, 2]
     """
 
-    return 42
+    borda_counts = []
+
+    for party in party_order:
+        count = 0
+        for ballot in rank_ballots:
+            count += len(party_order) - (ballot.index(party) + 1)
+        borda_counts.append(count)
+
+    return borda_counts
 
 
 ###############################################################################
@@ -281,8 +314,8 @@ def remove_party(rank_ballots: List[List[str]], party_to_remove: str) -> None:
     True
     """
 
-    return 42
-
+    for ballot in rank_ballots:
+        ballot.remove(party_to_remove)
 
 def get_lowest(party_tallies: List[int], party_order: List[str]) -> str:
     """Return the name of the party with the lowest number of votes in the
@@ -296,7 +329,12 @@ def get_lowest(party_tallies: List[int], party_order: List[str]) -> str:
     'LIBERAL'
     """
 
-    return 42
+    lowest = party_tallies[0]
+    for tally in party_tallies:
+        if tally <= lowest:
+            lowest = tally
+
+    return party_order[party_tallies.index(lowest)]
 
 
 def get_winner(party_tallies: List[int], party_order: List[str]) -> str:
@@ -311,7 +349,12 @@ def get_winner(party_tallies: List[int], party_order: List[str]) -> str:
     'NDP'
     """
 
-    return 42
+    highest = party_tallies[0]
+    for tally in party_tallies:
+        if tally >= highest:
+            highest = tally
+
+    return party_order[party_tallies.index(highest)]
 
 
 def voting_irv(rank_ballots: List[List[str]], party_order: List[str]) -> str:
@@ -327,18 +370,48 @@ def voting_irv(rank_ballots: List[List[str]], party_order: List[str]) -> str:
     >>> ballots = [['LIBERAL', 'GREEN', 'CPC', 'NDP'],
     ...            ['CPC', 'NDP', 'LIBERAL', 'GREEN'],
     ...            ['NDP', 'CPC', 'GREEN', 'LIBERAL']]
+
     >>> voting_irv(ballots, order)
     'NDP'
     >>> ballots == [['LIBERAL', 'NDP'],
     ...             ['NDP', 'LIBERAL'],
     ...             ['NDP', 'LIBERAL']]
     True
+
+    >>> ballots
+    [['LIBERAL', 'NDP'], ['NDP', 'LIBERAL'], ['NDP', 'LIBERAL']]
     >>> order
     ['LIBERAL', 'NDP']
     """
 
-    return 42
+    singles = extract_column(rank_ballots, 0)
+    singles_count = voting_plurality(singles, party_order)
+    winner = get_winner(singles_count, party_order)
 
+    total_votes = 0
+
+    for party in party_order:
+        total_votes += singles_count[party_order.index(party)]
+
+    highest = singles_count[party_order.index(winner)]
+
+    while highest <= total_votes - highest:
+        lowest = get_lowest(singles_count, party_order)
+        remove_party(rank_ballots, lowest)
+        party_order.remove(lowest)
+
+        singles = extract_column(rank_ballots, 0)
+        singles_count = voting_plurality(singles, party_order)
+        winner = get_winner(singles_count, party_order)
+
+        total_votes = 0
+
+        for party in party_order:
+            total_votes += singles_count[party_order.index(party)]
+
+        highest = singles_count[party_order.index(winner)]
+
+    return winner
 
 if __name__ == '__main__':
     import doctest

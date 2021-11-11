@@ -216,7 +216,7 @@ if __name__ == '__main__':
     doctest.testmod()
 
     PARTY_ORDER = ['CPC', 'GREEN', 'LIBERAL', 'NDP']
-    CSV_FILENAME = 'sample_votes.csv'
+    CSV_FILENAME = '/Users/crystal/Desktop/CSCA08/Assignment2/starter/sample_votes.csv'
 
     with open(CSV_FILENAME) as DATAFILE:
         VOTING_DATA = read_data(DATAFILE)
