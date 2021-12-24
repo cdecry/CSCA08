@@ -96,15 +96,23 @@ def clean_data(data: List[List[str]]) -> None:
     >>> clean_data(data3)
     >>> data3 == expected3
     True
+    >>> data4 = [['13', '523', 'CCP', '0', 'NO'],
+    ...          ['920', '3', 'CCP', '8', 'YES'],
+    ...          ['1', '4', 'CCP', '10', 'YES']]
+    >>> expected4 = [[13, 523, ['CCP'], [0], [False]],
+    ...              [920, 3, ['CCP'], [8], [True]],
+    ...              [1, 4, ['CCP'], [10], [True]]]
+    >>> clean_data(data4)
+    >>> data4 == expected4
+    True
     """
 
     for vote in data:
         vote[COL_RIDING] = int(vote[COL_RIDING])
         vote[COL_VOTER] = int(vote[COL_VOTER])
 
-        vote[COL_RANK] = vote[COL_RANK].split(SEPARATOR)
-        vote[COL_RANGE] = vote[COL_RANGE].split(SEPARATOR)
-        vote[COL_APPROVAL] = vote[COL_APPROVAL].split(SEPARATOR)
+        for i in range(COL_RANK, COL_APPROVAL + 1):
+            vote[i] = vote[i].split(SEPARATOR)
 
         for value in vote[COL_RANGE]:
             index = vote[COL_RANGE].index(value)
@@ -131,6 +139,8 @@ def extract_column(data: List[list], column: int) -> list:
     ...            ['NDP', 'CPC', 'GREEN', 'LIBERAL']]
     >>> extract_column(ballots, 0)
     ['LIBERAL', 'CPC', 'NDP']
+    >>> extract_column([[1, 2, 3], [4, 5, 6]], -1)
+    [3, 6]
     """
 
     extracted = []
@@ -149,6 +159,12 @@ def extract_single_ballots(data: List['VoteData']) -> List[str]:
 
     >>> extract_single_ballots(SAMPLE_DATA_1)
     ['NDP', 'LIBERAL', 'GREEN', 'LIBERAL']
+    >>> extract_single_ballots(SAMPLE_DATA_2)
+    ['LIBERAL', 'GREEN', 'NDP']
+    >>> extract_single_ballots(SAMPLE_DATA_3)
+    ['DEMOCRATIC', 'REPUBLICAN', 'REPUBLICAN']
+    >>> extract_single_ballots(SAMPLE_DATA_4)
+    ['CCP', 'CCP', 'CCP']
     """
 
     extracted = extract_column(data, COL_RANK)
@@ -168,6 +184,12 @@ def get_votes_in_riding(data: List['VoteData'],
     ...             [1, 4, ['LIBERAL', 'CPC', 'NDP', 'GREEN'], [3, 0, 5, 2],
     ...              [True, False, True, True]]]
     >>> get_votes_in_riding(SAMPLE_DATA_1, 1) == expected
+    True
+    >>> expected2 = [[117, 12, ['LIBERAL', 'CPC', 'NDP', 'GREEN'], [4, 0, 5, 0],
+    ...               [True, False, True, False]],
+    ...              [117, 21, ['GREEN', 'LIBERAL', 'NDP', 'CPC'], [4, 5, 5, 5],
+    ...               [True, True, True, True]]]
+    >>> get_votes_in_riding(SAMPLE_DATA_2, 117) == expected2
     True
     """
 
@@ -195,6 +217,9 @@ def voting_plurality(single_ballots: List[str],
     >>> voting_plurality(['GREEN', 'GREEN', 'NDP', 'GREEN', 'CPC'],
     ...                  SAMPLE_ORDER_1)
     [1, 3, 0, 1]
+    >>> voting_plurality(['LIBERAL', 'GREEN', 'LIBERAL', 'GREEN'],
+    ...                  SAMPLE_ORDER_1)
+    [0, 2, 2, 0]
     """
 
     total_ballots = []
@@ -281,6 +306,10 @@ def voting_borda(rank_ballots: List[List[str]],
     ...               ['CPC', 'LIBERAL', 'GREEN', 'NDP'],
     ...               ['LIBERAL', 'NDP', 'GREEN', 'CPC']], SAMPLE_ORDER_1)
     [4, 4, 8, 2]
+    >>> voting_borda([['LIBERAL', 'GREEN', 'CPC', 'NDP'],
+    ...               ['LIBERAL', 'CPC', 'GREEN', 'NDP'],
+    ...               ['LIBERAL', 'NDP', 'GREEN', 'CPC']], SAMPLE_ORDER_1)
+    [3, 4, 9, 2]
     """
 
     borda_counts = []
@@ -312,6 +341,14 @@ def remove_party(rank_ballots: List[List[str]], party_to_remove: str) -> None:
     ...             ['CPC', 'LIBERAL', 'GREEN'],
     ...             ['CPC', 'GREEN', 'LIBERAL']]
     True
+    >>> ballots2 = [['LIBERAL', 'GREEN', 'CPC'],
+    ...             ['CPC', 'LIBERAL', 'GREEN'],
+    ...             ['CPC', 'GREEN', 'LIBERAL']]
+    >>> remove_party(ballots2, 'LIBERAL')
+    >>> ballots2 == [['GREEN', 'CPC'],
+    ...             ['CPC', 'GREEN'],
+    ...             ['CPC', 'GREEN']]
+    True
     """
 
     for ballot in rank_ballots:
@@ -326,6 +363,8 @@ def get_lowest(party_tallies: List[int], party_order: List[str]) -> str:
     Pre: len(party_tallies) == len(party_order) > 0
 
     >>> get_lowest([16, 100, 4, 200], SAMPLE_ORDER_1)
+    'LIBERAL'
+    >>> get_lowest([82, 5, 4, 4], SAMPLE_ORDER_1)
     'LIBERAL'
     """
 
@@ -347,6 +386,8 @@ def get_winner(party_tallies: List[int], party_order: List[str]) -> str:
 
     >>> get_winner([16, 100, 4, 200], SAMPLE_ORDER_1)
     'NDP'
+    >>> get_winner([16, 2, 200, 200], SAMPLE_ORDER_1)
+    'LIBERAL'
     """
 
     highest = party_tallies[0]
